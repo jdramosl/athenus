@@ -2,6 +2,8 @@
 
 Athenus is a chatbot-like application designed to deliver intelligent and engaging conversations. Built with an **Android frontend**, a **Python Django backend**, and leveraging the power of **Ollama** and **Mistral** large language models (LLMs), Athenus aims to redefine user interaction through seamless AI-powered conversations.
 
+![athenus_logo](assets/athenus_logo.png "")
+
 ## Description
 
 Athenus integrates cutting-edge technologies to provide:
