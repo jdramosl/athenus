@@ -15,6 +15,10 @@ To set up and run the backend, ensure you have the following installed:
 
 ## Getting Started
 
+### Develpment branch `dev`
+- For the time being, backend code exists in `dev` branch.
+
+
 ### 1. Go to backend and setup Python.
 ```bash
 cd athenus-backend
@@ -25,6 +29,14 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 ### 2. Install
 ```bash
 pip install -r requirements.txt
+```
+
+- See what's in requirements
+```txt
+Django>=3.2.4,<3.3
+djangorestframework>=3.12.4,<3.13
+psycopg2>=2.8.6,<2.9
+drf-spectacular>=0.15.1,<0.16
 ```
 
 ### 3. Project Structure
