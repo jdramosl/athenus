@@ -1,0 +1,12 @@
+streamlit
+python-dotenv
+langchain
+langchain-community
+langchain-core
+sentence-transformers
+numpy
+scikit-learn
+chromadb
+pypdf
+ollama
+langchain-chroma
