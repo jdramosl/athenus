@@ -49,3 +49,37 @@ athenus-backend/
 ├── users/             # App for user authentication and management
 ├── requirements.txt   # List of Python dependencies
 ```
+
+## Quick Commands
+### Flake8
+Flake8 is the code linting for python we have (only for dev)
+```shell
+docker-compose run --rm app sh -c "flake8"
+```
+
+### Kicking off project
+```shell
+docker-compose run --rm app sh -c "django-admin startproject app ." # Create in current directory
+```
+
+### Run App orchestrated
+```shell
+docker-compose up
+```
+
+### Create another project in Atenus backend
+You can have segmented apps in django aside from the main one, in ur case "app"
+```shell
+docker-compose run --rm app sh -c "python manage.py startapp <name_of_app>"
+```
+
+- Example: user auth app:
+```shell
+docker-compose run --rm app sh -c "python manage.py startapp user"
+```
+
+### Create super user
+- Helps with Django Admin
+```shell
+docker compose run --rm app sh -c "python manage.py createsuperuser"
+```
