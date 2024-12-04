@@ -2,7 +2,7 @@ FROM python:3.9-alpine3.13
 LABEL maintainer="jsvargasc@unal.edu.co"
 
 # This disables buffering for stdout and stderr. All errors will show in terminal
-ENV PYTHONUNBUFFERED 1
+ENV PYTHONUNBUFFERED=1
 
 COPY ./requirements.txt /tmp/requirements.txt
 COPY ./requirements.dev.txt /tmp/requirements.dev.txt

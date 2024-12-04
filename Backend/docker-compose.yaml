@@ -2,7 +2,7 @@
 services:
   app:
     build:
-      context: .
+      context: . # Dockerfile in same dir.
       args:
         - DEV=true
     ports:
