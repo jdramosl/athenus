@@ -30,5 +30,15 @@ services:
       - POSTGRES_USER=devuser
       - POSTGRES_PASSWORD=changeme
 
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@example.com # Default pgAdmin login email
+      - PGADMIN_DEFAULT_PASSWORD=admin         # Default pgAdmin login password
+    ports:
+      - "5050:80" # Expose pgAdmin on port 5050
+    depends_on:
+      - db # Ensure the PostgreSQL service is started before pgAdmin
+
 volumes:
   dev-db-data:

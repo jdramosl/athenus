@@ -13,7 +13,7 @@ EXPOSE 8000
 
 # Postgres dependencies explained:
 # 1. postgresql client is the dependency Pyscopg2 relies on to work. Needs to staty in docker image in prod.
-# 2. add virtual tmp build deps is an groupping of the packages that fllow that sentence: musl, postgres dev, etc.
+# 2. --virtual: add virtual tmp build deps is an groupping of the packages that follow that sentence: musl, postgres dev, etc.
 # The latter will be removed in line ~29 after rm -rf line, because it's only needed for installation, but not for running.
 
 ARG DEV=false

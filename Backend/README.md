@@ -62,6 +62,16 @@ docker-compose run --rm app sh -c "flake8"
 docker-compose run --rm app sh -c "django-admin startproject app ." # Create in current directory
 ```
 
+### Make migrations (Generates migration files based on the changes you make to models)
+```shell
+docker compose run --rm app sh -c "python manage.py makemigrations"
+```
+
+### Migrate (Applies the migration files to the database making actual changes)
+```shell
+docker compose run --rm app sh -c "sh -c "python manage.py wait_for_db && python manage.py migrate"
+```
+
 ### Run App orchestrated
 ```shell
 docker-compose up
