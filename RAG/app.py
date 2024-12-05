@@ -1,12 +1,11 @@
-import streamlit as st
 import os
 import logging
 import asyncio
 from dotenv import load_dotenv
 from langchain_community.document_loaders import PyPDFLoader
-from langchain_community.llms import Ollama
+from langchain_ollama import OllamaLLM
 from langchain_chroma import Chroma
-from langchain.chains import LLMChain
+from langchain_core.runnables import RunnablePassthrough
 from langchain_core.prompts import ChatPromptTemplate
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from langchain.memory import ConversationSummaryBufferMemory
@@ -19,20 +18,18 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from collections import defaultdict
 import heapq
 from sklearn.feature_extraction.text import TfidfVectorizer
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 
 #ESTA VERSIÓN USA EL MODELO DE EMBEDDINGS "voyage-multilingual-2" DE VOYAGE AI Y EL MODELO DE CHAT "gemini-1.5-flash" DE GOOGLE GENAI
 #además usa el modelo de cross-encoder "cross-encoder/ms-marco-MiniLM-L-6 y - NO TIENE - iterative_retrieval para obtener más información relevante
 
 
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
 # Cargar variables de entorno y configurar el registro
 load_dotenv()
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Configuración de la aplicación Streamlit
-st.set_page_config(page_title="Sistema de Recuperación de Documentos", layout="wide")
-st.title("Sistema de Recuperación de Documentos")
 
 # Configuración de archivos PDF y modelos
 PDF_FILES = ["rbf.pdf"]
@@ -100,20 +97,19 @@ class BM25LRetriever:
         return heapq.nlargest(top_k, enumerate(doc_scores), key=lambda x: x[1])
 
 # Función para cargar archivos PDF
-@st.cache_data
 def load_pdf(pdf_file: str) -> List[Document]:
     try:
-        st.text(f"Cargando archivo PDF: {pdf_file}")
+        print(f"Cargando archivo PDF: {pdf_file}")
         loader = PyPDFLoader(pdf_file)
         data = loader.load()
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=CHUNK_SIZE, chunk_overlap=CHUNK_OVERLAP)
         docs = text_splitter.split_documents(data)
         logger.info("Cargado exitosamente %s", pdf_file)
-        st.success(f"Cargado exitosamente {pdf_file}")
+        print(f"Cargado exitosamente {pdf_file}")
         return docs
     except Exception as e:
         logger.error("Error cargando %s: %s", pdf_file, str(e))
-        st.error(f"Error cargando {pdf_file}: {str(e)}")
+        print(f"Error cargando {pdf_file}: {str(e)}")
         return []
 
 # Función para calcular pesos TF-IDF
@@ -122,31 +118,29 @@ def compute_tfidf_weights(docs: List[str]) -> TfidfVectorizer:
     vectorizer.fit(docs)
     return vectorizer
 
-@st.cache_resource
 def create_retrieval_systems(_docs: List[Document]) -> Tuple[Optional[Chroma], Optional[BM25LRetriever], Optional[List[Document]], Optional[TfidfVectorizer]]:
     try:
-        with st.spinner("Creando sistemas de recuperación..."):
-            # Usar HuggingFaceEmbeddings en lugar de VoyageAIEmbeddings
-            embeddings = HuggingFaceEmbeddings(
-                model_name="sentence-transformers/all-MiniLM-L6-v2",
-                model_kwargs={'device': 'cpu'}
-            )
+        print("Creando sistemas de recuperación...")
+        # Usar HuggingFaceEmbeddings en lugar de VoyageAIEmbeddings
+        embeddings = HuggingFaceEmbeddings(
+            model_name="sentence-transformers/all-MiniLM-L6-v2",
+            model_kwargs={'device': 'cpu'}
+        )
 
-            vectorstore = Chroma.from_documents(
-                documents=_docs,
-                embedding=embeddings
-            )
-            doc_texts = [doc.page_content for doc in _docs]
-            bm25l_retriever = BM25LRetriever(doc_texts, k1=1.2, b=0.75, delta=0.5)
-            tfidf_vectorizer = compute_tfidf_weights(doc_texts)
+        vectorstore = Chroma.from_documents(
+            documents=_docs,
+            embedding=embeddings
+        )
+        doc_texts = [doc.page_content for doc in _docs]
+        bm25l_retriever = BM25LRetriever(doc_texts, k1=1.2, b=0.75, delta=0.5)
+        tfidf_vectorizer = compute_tfidf_weights(doc_texts)
         logger.info("Sistemas de recuperación creados exitosamente")
         return vectorstore, bm25l_retriever, _docs, tfidf_vectorizer
     except Exception as e:
         logger.error("Error creando sistemas de recuperación: %s", str(e))
-        st.error(f"Error creando sistemas de recuperación: {str(e)}")
+        print(f"Error creando sistemas de recuperación: {str(e)}")
         return None, None, None, None
 # Función para cargar el CrossEncoder
-@st.cache_resource
 def load_cross_encoder():
     return CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2')
 
@@ -247,7 +241,7 @@ def main():
         all_docs.extend(load_pdf(pdf_file))
 
     if not all_docs:
-        st.error("No se cargaron documentos exitosamente. Por favor, verifica tus archivos PDF e inténtalo de nuevo.")
+        print("No se cargaron documentos exitosamente. Por favor, verifica tus archivos PDF e inténtalo de nuevo.")
         return
 
     vectorstore, bm25l_retriever, docs, tfidf_vectorizer = create_retrieval_systems(all_docs)
@@ -255,8 +249,8 @@ def main():
         return
 
     streaming_handler = StreamingStdOutCallbackHandler()
-    llm = Ollama(
-        model="llama3.2",
+    llm = OllamaLLM(
+        model=CHAT_MODEL,
         temperature=0.0,
         callbacks=[streaming_handler],
         base_url="http://localhost:11434"  # o la URL que corresponda
@@ -276,50 +270,51 @@ def main():
         memory_key="chat_history",
         return_messages=True
     )
-    llm_chain = LLMChain(
-        llm=llm,
-        prompt=prompt,
-        memory=memory,
-        verbose=True,
-        output_key="answer"
+    chain = (
+        {
+            "context": RunnablePassthrough(),
+            "question": RunnablePassthrough(),
+            "chat_history": lambda x: memory.load_memory_variables({})["chat_history"]
+        }
+        | prompt
+        | llm
     )
 
-    st.subheader("Haz una pregunta sobre los documentos")
+    messages = []
 
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
+    while True:
+        query = input("\nHaz una pregunta (o escribe 'salir' para terminar): ")
+        if query.lower() == 'salir':
+            break
 
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
+        messages.append({"role": "user", "content": query})
+        try:
+            print("\nAnalizando documentos...")
+            context = asyncio.run(get_relevant_context(
+                vectorstore, bm25l_retriever, docs, tfidf_vectorizer,
+                query, messages, cross_encoder
+            ))
+            formatted_prompt = prompt.format(
+                context=context,
+                question=query,
+                chat_history=memory.load_memory_variables({})["chat_history"]
+            )
+            print("\nPrompt enviado al modelo:")
+            print(formatted_prompt)
+            response = chain.invoke({"context": context, "question": query})
+            memory.save_context({"question": query}, {"output": response})
+            print("\nRespuesta:", response)
+            messages.append({"role": "assistant", "content": response})
 
-    if query := st.chat_input("Tu pregunta sobre los documentos:"):
-        st.session_state.messages.append({"role": "user", "content": query})
-        with st.chat_message("user"):
-            st.markdown(query)
+            # Opcional: retroalimentación
+            feedback = input("\n¿Deseas calificar la respuesta? (1-5, o presiona Enter para saltar): ")
+            if feedback.isdigit() and 1 <= int(feedback) <= 5:
+                save_feedback(query, response, int(feedback))
 
-        with st.chat_message("assistant"):
-            message_placeholder = st.empty()
-            full_response = ""
-            try:
-                with st.spinner("Analizando documentos..."):
-                    context = asyncio.run(get_relevant_context(vectorstore, bm25l_retriever, docs, tfidf_vectorizer, query, st.session_state.messages, cross_encoder))
-
-                    response = llm_chain.predict(context=context, question=query)
-                    full_response = response
-                    message_placeholder.markdown(full_response)
-            except Exception as e:
-                logger.error("Error procesando la consulta: %s", str(e))
-                full_response = f"Lo siento, pero encontré un error al procesar tu consulta. Esto es lo que encontré basado en una búsqueda por palabras clave: {fallback_keyword_search(docs, query)}"
-                message_placeholder.markdown(full_response)
-
-        st.session_state.messages.append({"role": "assistant", "content": full_response})
-
-    # Mecanismo de retroalimentación
-    if st.button("Enviar Retroalimentación"):
-        feedback = st.slider("Califica la calidad de la respuesta (1-5)", 1, 5, 3)
-        save_feedback(query, full_response, feedback)
-        st.success("¡Gracias por tu retroalimentación!")
+        except Exception as e:
+            logger.error("Error procesando la consulta: %s", str(e))
+            fallback = fallback_keyword_search(docs, query)
+            print(f"\nError: Lo siento, pero encontré un error al procesar tu consulta. Esto es lo que encontré basado en una búsqueda por palabras clave: {fallback}")
 
 if __name__ == "__main__":
     main()
