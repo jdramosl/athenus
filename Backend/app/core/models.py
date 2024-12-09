@@ -34,7 +34,11 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractBaseUser, PermissionsMixin):
-    """User in the system."""
+    """
+    User in the system.
+    By default, Django provides the Manager class, which handles database query operations like .create(), .get(), .filter(), etc.  noqa
+    UserManager is a specialized manager that includes methods tailored to managing user objects, such as creating users and superusers.  noqa
+    """
     email = models.EmailField(max_length=255, unique=True)
     name = models.CharField(max_length=255)
     is_active = models.BooleanField(default=True)
