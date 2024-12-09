@@ -1,3 +1,7 @@
+"""
+Database Models.
+"""
+from django.conf import settings
 from django.db import models # noqa
 from django.contrib.auth.models import (
     AbstractBaseUser,
@@ -40,3 +44,19 @@ class User(AbstractBaseUser, PermissionsMixin):
     objects = UserManager()
 
     USERNAME_FIELD = 'email'
+
+
+class Company(models.Model):
+    """Company object."""
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    address = models.CharField(max_length=255)
+    city = models.CharField(max_length=255)
+    employee = models.ForeignKey(
+        settings.AUTH_USER_MODEL, # the base user model is the FK
+        on_delete=models.CASCADE
+    )
+
+    def __str__(self):
+        """Printable object"""
+        return self.name
