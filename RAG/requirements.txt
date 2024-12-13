@@ -1,12 +1,9 @@
-streamlit
 python-dotenv
-langchain
 langchain-community
+langchain-ollama
+langchain-chroma
 langchain-core
 sentence-transformers
-numpy
 scikit-learn
-chromadb
-pypdf
-ollama
-langchain-chroma
+langchain-huggingface
+
