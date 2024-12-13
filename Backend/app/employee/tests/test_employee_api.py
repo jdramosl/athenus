@@ -104,24 +104,26 @@ class PrivateEmployeeApiTest(TestCase):
 
 
 
-    # def test_create_company(self):
-    #     """Test creating a company."""
-    #     payload = {
-    #         'name': 'Some Company',
-    #         'description': 'It was founded in 1887',
-    #         'address': '100 st. 1400',
-    #         'city': 'Bogotá D.C.',
-    #     }
-    #     # COMPANIES URL uses "list" endpoint, so the normal endopint "/companies"
-    #     res = self.client.post(COMPANIES_URL, payload)
-    #     # Check code is correct
-    #     self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+    def test_create_Employee(self):
+        """Test creating a Employee."""
+        payload = {
+            'department': 'IT',
+            'job_title': 'MID',
+            'is_active': True,
+        }
+        # COMPANIES URL uses "list" endpoint, so the normal endopint "/companies"
+        res = self.client.post(EMPLOYEES_URL, payload)
+        # Debugging response   noqa
+        print(res.json())
 
-    #     # Retrieve Company object with ID from creation
-    #     company = Company.objects.get(id=res.data['id'])
-    #     # getattr uses the actual value found in k
-    #     for k, v in payload.items():
-    #         # Assert that retrieving the Company object with the id, matches the payload values.
-    #         self.assertEqual(getattr(company, k), v)
-    #     # Check user from API
-    #     self.assertEqual(company.employee, self.user)
+        # Check code is correct
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+
+        # Retrieve Employee object with ID from creation
+        employee = Employee.objects.get(user=res.data['user'])
+        # getattr uses the actual value found in k
+        for k, v in payload.items():
+            # Assert that retrieving the Employee object with the id, matches the payload values.
+            self.assertEqual(getattr(employee, k), v)
+        # Check user from API
+        self.assertEqual(employee.user, self.user)
