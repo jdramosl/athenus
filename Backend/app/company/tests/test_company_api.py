@@ -48,7 +48,7 @@ def create_company(employee, **params):
     }
     defaults.update(params)
 
-    company = Company.objects.create(user=employee, **defaults)
+    company = Company.objects.create(employee=employee, **defaults)
     return company
 
 def create_user(**params):
@@ -115,7 +115,7 @@ class PrivateCompanyApiTest(TestCase):
         res = self.client.get(COMPANIES_URL)
 
         # Only authenticated user companies
-        companies = Company.objects.filter(user=self.user)
+        companies = Company.objects.filter(employee=self.user)
         serializer = CompanySerializer(companies, many=True)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
@@ -124,7 +124,7 @@ class PrivateCompanyApiTest(TestCase):
 
     def test_get_company_detail(self):
         """Test get Company detail."""
-        company = create_company(user=self.user)
+        company = create_company(employee=self.user)
 
         url = detail_url(company.id)
         res = self.client.get(url)

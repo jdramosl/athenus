@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'core',
     'user',
     'company',
+    'employee',
     'rest_framework',
     'rest_framework.authtoken', # It's another app from drf
     'drf_spectacular',

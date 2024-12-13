@@ -64,3 +64,75 @@ class Company(models.Model):
     def __str__(self):
         """Printable object"""
         return self.name
+
+
+class Employee(models.Model):
+    """
+    Employee model representing additional details for users working in the organization.
+    This model creates a one-to-one relationship with the custom User model.
+    So in Athenus we can creeate users without link them to employees.
+    But we can't create an employee without an user.
+    """
+    DEPARTMENT_CHOICES = [
+        ('HR', 'Human Resources'),
+        ('IT', 'Information Technology'),
+        ('FIN', 'Finance'),
+        ('SALES', 'Sales'),
+        ('MARKETING', 'Marketing'),
+        ('OPS', 'Operations'),
+    ]
+
+    JOB_TITLE_CHOICES = [
+        ('ENTRY', 'Entry Level'),
+        ('MID', 'Mid Level'),
+        ('SENIOR', 'Senior Level'),
+        ('MANAGER', 'Management'),
+        ('DIRECTOR', 'Director'),
+        ('EXEC', 'Executive'),
+    ]
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        primary_key=True
+    )
+
+   # Employee Specific
+    department = models.CharField(
+        max_length=20,
+        choices=DEPARTMENT_CHOICES,
+        help_text="Department the employee belongs to"
+    )
+    job_title = models.CharField(
+        max_length=20,
+        choices=JOB_TITLE_CHOICES,
+        help_text="Employee's job title"
+    )
+    is_active = models.BooleanField(
+        default=True,
+        help_text="Whether the employee is currently employed"
+    )
+
+    # Optional manager contact details
+    manager = models.ForeignKey(
+        'self',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='direct_reports'
+    )
+
+    def __str__(self):
+        return f"{self.user.name} - {self.job_title} ({self.department})"
+
+    def get_full_name(self):
+        """
+        Returns the full name of the employee.
+        """
+        return self.user.name
+
+    def is_management(self):
+        """
+        Check if the employee is in a management position.
+        """
+        return self.job_title in ['MANAGER', 'DIRECTOR', 'EXEC']
