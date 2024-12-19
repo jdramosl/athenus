@@ -2,4 +2,5 @@
 <resources>
 
     <style name="Theme.Athenus" parent="Theme.AppCompat.Light.DarkActionBar" />
+
 </resources>
