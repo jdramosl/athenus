@@ -1,3 +1,6 @@
+fastapi
+uvicorn
+pydantic
 python-dotenv
 langchain-community
 langchain-ollama
@@ -6,4 +9,3 @@ langchain-core
 sentence-transformers
 scikit-learn
 langchain-huggingface
-
