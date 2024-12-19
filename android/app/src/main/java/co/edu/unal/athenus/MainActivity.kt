@@ -6,7 +6,10 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import co.edu.unal.athenus.adapter.MessageAdapter
 import co.edu.unal.athenus.databinding.ActivityMainBinding
 import co.edu.unal.athenus.model.Message
+import io.noties.markwon.Markwon
 import okhttp3.*
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import org.json.JSONObject
 import java.io.IOException
 
 class MainActivity : AppCompatActivity() {
@@ -45,17 +48,21 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun sendPostRequest(userMessage: String) {
-        val url = "https://136e-2a09-bac1-1a20-40-00-286-20.ngrok-free.app/api/user/create/"
-        val client = OkHttpClient()
+        val url = "https://136e-2a09-bac1-1a20-40-00-286-20.ngrok-free.app/api/company/employees/4/chatbot/"
+
+        // Configurar el cliente con tiempos de espera
+        val client = OkHttpClient.Builder()
+            .connectTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
+            .readTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
+            .writeTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
+            .build()
 
         val requestBody = FormBody.Builder()
-            //.add("message", userMessage)
-            .add("email", userMessage)
-            .add("name", userMessage)
-            .add("password", userMessage)
+            .add("message", userMessage)
             .build()
 
         val request = Request.Builder()
+            .header("Authorization", "Token 07d5ab3e1e69ce896946ecf0d76803a8236da06c")
             .url(url)
             .post(requestBody)
             .build()
@@ -72,14 +79,34 @@ class MainActivity : AppCompatActivity() {
             override fun onResponse(call: Call, response: Response) {
                 if (response.isSuccessful) {
                     val responseBody = response.body?.string()
-                    runOnUiThread {
-                        messages.add(Message(responseBody ?: "Respuesta vacía", false))
-                        adapter.notifyDataSetChanged()
-                        binding.recyclerViewMessages?.scrollToPosition(messages.size - 1)
+                    if (responseBody != null) {
+                        try {
+                            // Analizar JSON y obtener la propiedad "answer"
+                            val jsonObject = JSONObject(responseBody)
+                            val answer = jsonObject.getJSONObject("chatbot_response").getString("answer")
+                            val employeeName = jsonObject.getString("employee")
+                            val markwon = Markwon.create(binding.root.context)
+                            val markdownText = markwon.toMarkdown(answer)
+
+                            // Mostrar como Markdown (Usando Markwon)
+                            runOnUiThread {
+                                val markdownMessage = Message("Hi " +employeeName+", "+answer, false)
+                                messages.add(markdownMessage)
+                                adapter.notifyDataSetChanged()
+
+                                // Scroll a la última posición
+                                binding.recyclerViewMessages?.scrollToPosition(messages.size - 1)
+                            }
+                        } catch (e: Exception) {
+                            runOnUiThread {
+                                messages.add(Message("Error al procesar el JSON: ${e.message}", false))
+                                adapter.notifyDataSetChanged()
+                            }
+                        }
                     }
                 } else {
                     runOnUiThread {
-                        messages.add(Message("Error en la respuesta: ${response.message}", false))
+                        messages.add(Message("Error en la respuesta: ${response}", false))
                         adapter.notifyDataSetChanged()
                     }
                 }
