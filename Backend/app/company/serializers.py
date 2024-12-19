@@ -2,6 +2,7 @@
 Serializers for Company APIs
 """
 from rest_framework import serializers
+from django.shortcuts import get_object_or_404
 
 from core.models import (
     Company,
@@ -27,6 +28,10 @@ class CompanyDetailSerializer(CompanySerializer):
 class EmployeeSerializer(serializers.ModelSerializer):
     """Serializer for employee."""
 
+    # Ensure `company` is treated as a primary key reference
+    company = serializers.PrimaryKeyRelatedField(queryset=Company.objects.all())
+
+
     class Meta:
         model = Employee
         fields = ['user', 'department', 'job_title', 'is_active', 'company']
@@ -46,14 +51,9 @@ class EmployeeSerializer(serializers.ModelSerializer):
         return company_obj
 
     def create(self, validated_data):
-        """Customizing creating Employee."""
-        company_data = validated_data.pop('company', None)
-
-        # Validate if company exists. If not, it creates it and then it creates employee.
-        if company_data:
-            company = self._get_or_create_company(company_data)
-            validated_data['company'] = company
-
+        """Create a new employee."""
+        request = self.context['request']
+        validated_data['user'] = request.user  # Set the authenticated user
         return Employee.objects.create(**validated_data)
 
     def update(self, instance, validated_data):
