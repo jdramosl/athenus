@@ -12,8 +12,9 @@ from company import views
 
 
 router = DefaultRouter()
-# This will create endpoint "/recipes", it will support CRUD methods
+# This will create endpoint "/company/copanies", "company/employees", it will support CRUD methods
 router.register('companies', views.CompanyViewSet)
+router.register('employees',views.EmployeeViewSet)
 
 # Name for reverse look up
 app_name = 'company'
