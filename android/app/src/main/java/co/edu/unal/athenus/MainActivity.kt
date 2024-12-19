@@ -1,5 +1,7 @@
 package co.edu.unal.athenus
 
+import android.R
+import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -8,6 +10,7 @@ import co.edu.unal.athenus.databinding.ActivityMainBinding
 import co.edu.unal.athenus.model.Message
 import okhttp3.*
 import java.io.IOException
+
 
 class MainActivity : AppCompatActivity() {
 
@@ -19,33 +22,44 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         // Initialize View Binding
-        binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(binding.root)
+        val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
+        val isLoggedIn = prefs.getBoolean("isLoggedIn", false)
 
-        // Initialize RecyclerView and Adapter
-        adapter = MessageAdapter(messages)
-        binding.recyclerViewMessages?.layoutManager = LinearLayoutManager(this)
-        binding.recyclerViewMessages?.adapter = adapter
+        if (!isLoggedIn) {
+            val intent = Intent(
+                this@MainActivity,
+                LoginActivity::class.java
+            )
+            startActivity(intent)
+            finish()
+        } else {
+            binding = ActivityMainBinding.inflate(layoutInflater)
+            setContentView(binding.root)
 
-        // Handle Send Button Click
-        binding.buttonSend?.setOnClickListener {
-            val userMessage = binding.editTextMessage?.text.toString()
-            if (userMessage.isNotBlank()) {
-                // Add user message
-                messages.add(Message(userMessage, true))
-                adapter.notifyDataSetChanged()
+            // Initialize RecyclerView and Adapter
+            adapter = MessageAdapter(messages)
+            binding.recyclerViewMessages?.layoutManager = LinearLayoutManager(this)
+            binding.recyclerViewMessages?.adapter = adapter
 
-                // Hacer petición POST al endpoint
-                sendPostRequest(userMessage)
+            // Handle Send Button Click
+            binding.buttonSend?.setOnClickListener {
+                val userMessage = binding.editTextMessage?.text.toString()
+                if (userMessage.isNotBlank()) {
+                    // Add user message
+                    messages.add(Message(userMessage, true))
+                    adapter.notifyDataSetChanged()
 
-                // Limpiar el campo de entrada
-                binding.editTextMessage?.text?.clear()
+                    // Hacer petición POST al endpoint
+                    sendPostRequest(userMessage)
+
+                    // Limpiar el campo de entrada
+                    binding.editTextMessage?.text?.clear()
+                }
             }
         }
     }
-
     private fun sendPostRequest(userMessage: String) {
-        val url = "http://10.0.2.2:8080/llm"
+        val url = "https://136e-2a09-bac1-1a20-40-00-286-20.ngrok-free.app/api/user/create/"
         val client = OkHttpClient()
 
         val requestBody = FormBody.Builder()
