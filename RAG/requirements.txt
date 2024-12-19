@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+pydantic
+python-dotenv
+langchain-community
+langchain-ollama
+langchain-chroma
+langchain-core
+sentence-transformers
+scikit-learn
+langchain-huggingface

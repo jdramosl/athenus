@@ -49,29 +49,35 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     USERNAME_FIELD = 'email'
 
+    def get_full_name(self):
+        """
+        Returns the full name of the user.
+        """
+        return f"{self.name}".strip()
+
 
 class Company(models.Model):
-    """Company object."""
+    """Company model."""
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     address = models.CharField(max_length=255)
     city = models.CharField(max_length=255)
-    employee = models.ForeignKey(
-        settings.AUTH_USER_MODEL, # the base user model is the FK
-        on_delete=models.CASCADE
+
+    # FK to the User model (settings.AUTH_USER_MODEL)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='companies_owned'
     )
 
     def __str__(self):
-        """Printable object"""
+        """Printable representation."""
         return self.name
 
 
 class Employee(models.Model):
     """
-    Employee model representing additional details for users working in the organization.
-    This model creates a one-to-one relationship with the custom User model.
-    So in Athenus we can creeate users without link them to employees.
-    But we can't create an employee without an user.
+    Employee model representing users working in the organization.
     """
     DEPARTMENT_CHOICES = [
         ('HR', 'Human Resources'),
@@ -82,57 +88,21 @@ class Employee(models.Model):
         ('OPS', 'Operations'),
     ]
 
-    JOB_TITLE_CHOICES = [
-        ('ENTRY', 'Entry Level'),
-        ('MID', 'Mid Level'),
-        ('SENIOR', 'Senior Level'),
-        ('MANAGER', 'Management'),
-        ('DIRECTOR', 'Director'),
-        ('EXEC', 'Executive'),
-    ]
-
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         primary_key=True
     )
 
-   # Employee Specific
-    department = models.CharField(
-        max_length=20,
-        choices=DEPARTMENT_CHOICES,
-        help_text="Department the employee belongs to"
-    )
-    job_title = models.CharField(
-        max_length=20,
-        choices=JOB_TITLE_CHOICES,
-        help_text="Employee's job title"
-    )
-    is_active = models.BooleanField(
-        default=True,
-        help_text="Whether the employee is currently employed"
+    company = models.ForeignKey(
+        Company,
+        on_delete=models.CASCADE,
+        related_name='employees'
     )
 
-    # Optional manager contact details
-    manager = models.ForeignKey(
-        'self',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='direct_reports'
-    )
+    department = models.CharField(max_length=20, choices=DEPARTMENT_CHOICES)
+    job_title = models.CharField(max_length=20, help_text="Employee's job title")
+    is_active = models.BooleanField(default=True)
 
     def __str__(self):
-        return f"{self.user.name} - {self.job_title} ({self.department})"
-
-    def get_full_name(self):
-        """
-        Returns the full name of the employee.
-        """
-        return self.user.name
-
-    def is_management(self):
-        """
-        Check if the employee is in a management position.
-        """
-        return self.job_title in ['MANAGER', 'DIRECTOR', 'EXEC']
+        return f"{self.user.get_full_name()} - {self.company.name}"
