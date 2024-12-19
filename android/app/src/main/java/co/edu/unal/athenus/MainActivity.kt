@@ -45,11 +45,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun sendPostRequest(userMessage: String) {
-        val url = "http://10.0.2.2:8080/llm"
+        val url = "https://136e-2a09-bac1-1a20-40-00-286-20.ngrok-free.app/api/user/create/"
         val client = OkHttpClient()
 
         val requestBody = FormBody.Builder()
-            .add("message", userMessage)
+            //.add("message", userMessage)
+            .add("email", userMessage)
+            .add("name", userMessage)
+            .add("password", userMessage)
             .build()
 
         val request = Request.Builder()
