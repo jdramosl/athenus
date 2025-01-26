@@ -53,6 +53,7 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.material)
     implementation(libs.androidx.recyclerview)
+    implementation(libs.core)
     // https://mvnrepository.com/artifact/com.squareup.okhttp3/okhttp
     implementation(libs.okhttp)
     testImplementation(libs.junit)
