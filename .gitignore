@@ -164,3 +164,8 @@ dmypy.json
 
 # IDEs
 .idea/
+
+
+
+Constants.kt
+**/Constants.kt

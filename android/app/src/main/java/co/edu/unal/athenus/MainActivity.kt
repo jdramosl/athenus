@@ -28,6 +28,20 @@ import java.io.FileOutputStream
 import java.io.InputStream
 import java.io.OutputStream
 
+import androidx.compose.runtime.mutableStateListOf
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.google.ai.client.generativeai.GenerativeModel
+import com.google.ai.client.generativeai.type.content
+import kotlinx.coroutines.launch
+
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+
+
+
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
@@ -49,6 +63,11 @@ class MainActivity : AppCompatActivity() {
     // Add new properties
     private lateinit var recorder: Recorder
     private var wavFile: File? = null
+
+   private val model = GenerativeModel(
+        modelName = "gemini-pro",
+        apiKey = Constants.geminiApiKey
+    )
 
     private fun copyAssetsToSdcard(extensions: Array<String>) {
         val assetManager = assets
@@ -183,79 +202,8 @@ class MainActivity : AppCompatActivity() {
         wavFile?.delete()
     }
 
-    private fun sendPostRequest(userMessage: String) {
-        val url = "https://ae55-2a09-bac5-26f9-10f-00-1b-26b.ngrok-free.app/api/company/employees/4/chatbot/"
 
-        // Configurar el cliente con tiempos de espera
-        val client = OkHttpClient.Builder()
-            .connectTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
-            .readTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
-            .writeTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
-            .build()
 
-        val requestBody = FormBody.Builder()
-            .add("message", userMessage)
-            .build()
-
-        val request = Request.Builder()
-            .header("Authorization", "Token 07d5ab3e1e69ce896946ecf0d76803a8236da06c")
-            .url(url)
-            .post(requestBody)
-            .build()
-
-        client.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                runOnUiThread {
-                    binding.buttonSend?.isEnabled = true
-                    binding.buttonSend?.text = "Send"
-                    messages.add(Message("Error: ${e.message}", false))
-                    adapter.notifyDataSetChanged()
-                }
-            }
-
-            override fun onResponse(call: Call, response: Response) {
-                if (response.isSuccessful) {
-                    val responseBody = response.body?.string()
-                    if (responseBody != null) {
-                        try {
-                            // Analizar JSON y obtener la propiedad "answer"
-                            val jsonObject = JSONObject(responseBody)
-                            val answer = jsonObject.getJSONObject("chatbot_response").getString("answer")
-                            val employeeName = jsonObject.getString("employee")
-                            val markwon = Markwon.create(binding.root.context)
-                            val markdownText = markwon.toMarkdown(answer)
-
-                            // Mostrar como Markdown (Usando Markwon)
-                            runOnUiThread {
-                                binding.buttonSend?.isEnabled = true
-                                binding.buttonSend?.text = "Send"
-                                val markdownMessage = Message("Hi " +employeeName+", "+answer, false)
-                                messages.add(markdownMessage)
-                                adapter.notifyDataSetChanged()
-
-                                // Scroll a la última posición
-                                binding.recyclerViewMessages?.scrollToPosition(messages.size - 1)
-                            }
-                        } catch (e: Exception) {
-                            runOnUiThread {
-                                binding.buttonSend?.isEnabled = true
-                                binding.buttonSend?.text = "Send"
-                                messages.add(Message("Error al procesar el JSON: ${e.message}", false))
-                                adapter.notifyDataSetChanged()
-                            }
-                        }
-                    }
-                } else {
-                    runOnUiThread {
-                        binding.buttonSend?.isEnabled = true
-                        binding.buttonSend?.text = "Send"
-                        messages.add(Message("Error en la respuesta: ${response}", false))
-                        adapter.notifyDataSetChanged()
-                    }
-                }
-            }
-        })
-    }
     private fun checkPermissions(): Boolean {
         if (ContextCompat.checkSelfPermission(
                 this,
@@ -378,4 +326,47 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
+
+
+    private fun sendPostRequest(userMessage: String) {
+        // Add user message to UI
+        messages.add(Message(userMessage, true))
+        adapter.notifyDataSetChanged()
+        binding.buttonSend?.isEnabled = false
+        binding.buttonSend?.text = "Loading..."
+
+        // Launch coroutine in lifecycleScope
+        lifecycleScope.launch {
+            try {
+                val response = withContext(Dispatchers.IO) {
+                    model.generateContent(userMessage)  // Call Gemini API
+                }
+                val geminiResponse = response.text.toString()
+
+                // Log Gemini Response
+                Log.i("Response from Gemini", geminiResponse)
+
+                // Update UI with Gemini's response
+                runOnUiThread {
+                    binding.buttonSend?.isEnabled = true
+                    binding.buttonSend?.text = "Send"
+                    messages.add(Message(geminiResponse, false))
+                    adapter.notifyDataSetChanged()
+                    binding.recyclerViewMessages?.scrollToPosition(messages.size - 1)
+                }
+            } catch (e: Exception) {
+                // Handle errors
+                runOnUiThread {
+                    binding.buttonSend?.isEnabled = true
+                    binding.buttonSend?.text = "Send"
+                    messages.add(Message("Error: ${e.message}", false))
+                    adapter.notifyDataSetChanged()
+                }
+                Log.e("Gemini Error", "Failed to generate response", e)
+            }
+        }
+    }
+
 }
+
+

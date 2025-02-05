@@ -48,6 +48,10 @@ android {
         compose = true
         viewBinding = true
     }
+
+    packaging {
+        jniLibs.pickFirsts.add("lib/arm64-v8a/libtensorflowlite.so")
+    }
 }
 
 dependencies {
@@ -93,6 +97,10 @@ dependencies {
             exclude(group = "com.google.ai.edge.litert", module = "litert-api")
         }
     }
+
+    implementation("org.tensorflow:tensorflow-lite:2.13.0") // Core TensorFlow Lite library
+    implementation("org.tensorflow:tensorflow-lite-gpu:2.13.0") // Only if you need GPU acceleration
+    implementation("org.tensorflow:tensorflow-lite-support:0.4.4") // Optional support library
 
     implementation("com.google.ai.client.generativeai:generativeai:0.7.0")
 
