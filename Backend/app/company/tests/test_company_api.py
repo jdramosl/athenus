@@ -38,7 +38,7 @@ def detail_url(company_id):
     """
     return reverse('company:company-detail', args=[company_id])
 
-def create_company(employee, **params):
+def create_company(user, **params):
     """Create and return a sample company."""
     defaults = {
         'name': 'Some Company',
@@ -48,7 +48,7 @@ def create_company(employee, **params):
     }
     defaults.update(params)
 
-    company = Company.objects.create(employee=employee, **defaults)
+    company = Company.objects.create(user=user, **defaults)
     return company
 
 def create_user(**params):
@@ -84,8 +84,8 @@ class PrivateCompanyApiTest(TestCase):
     def test_retrieve_companies(self):
         """Test retrieveing a list of companies. We retrieve ids in descending order."""
         # 1. First we create two companies for athenus
-        create_company(employee=self.user)
-        create_company(employee=self.user)
+        create_company(user=self.user)
+        create_company(user=self.user)
 
         # 2. We make the request
         res = self.client.get(COMPANIES_URL)
@@ -108,14 +108,14 @@ class PrivateCompanyApiTest(TestCase):
             password='password123',
         )
         # One company bu the actual user (authenticated)
-        create_company(employee=other_user)
+        create_company(user=other_user)
         # One by the other user.
-        create_company(employee=self.user)
+        create_company(user=self.user)
 
         res = self.client.get(COMPANIES_URL)
 
         # Only authenticated user companies
-        companies = Company.objects.filter(employee=self.user)
+        companies = Company.objects.filter(user=self.user)
         serializer = CompanySerializer(companies, many=True)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
@@ -124,7 +124,7 @@ class PrivateCompanyApiTest(TestCase):
 
     def test_get_company_detail(self):
         """Test get Company detail."""
-        company = create_company(employee=self.user)
+        company = create_company(user=self.user)
 
         url = detail_url(company.id)
         res = self.client.get(url)
@@ -153,4 +153,4 @@ class PrivateCompanyApiTest(TestCase):
             # Assert that retrieving the Company object with the id, matches the payload values.
             self.assertEqual(getattr(company, k), v)
         # Check user from API
-        self.assertEqual(company.employee, self.user)
+        self.assertEqual(company.user, self.user)

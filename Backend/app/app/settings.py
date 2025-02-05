@@ -26,7 +26,12 @@ SECRET_KEY = 'django-insecure-n^53z!-x5sj-eeq3m%go5^=^ek9hrw^3$=ai+svoqmeyfn6hb4
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    '136e-2a09-bac1-1a20-40-00-286-20.ngrok-free.app',
+    'ae55-2a09-bac5-26f9-10f-00-1b-26b.ngrok-free.app'
+]
 
 
 # Application definition
@@ -41,7 +46,6 @@ INSTALLED_APPS = [
     'core',
     'user',
     'company',
-    'employee',
     'rest_framework',
     'rest_framework.authtoken', # It's another app from drf
     'drf_spectacular',

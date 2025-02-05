@@ -1,2 +1,4 @@
 flake8>=3.9.2,<3.10
 black
+pyngrok
+python-dotenv

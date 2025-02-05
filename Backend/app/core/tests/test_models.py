@@ -8,6 +8,11 @@ from django.contrib.auth import get_user_model
 
 from core import models
 
+
+def create_user(email='user@example.com', password='testpass123'):
+    """Create and return new user."""
+    return get_user_model().objects.create_user(email, password)
+
 class ModelTests(TestCase):
     """Test models."""
 
@@ -55,33 +60,36 @@ class ModelTests(TestCase):
 
     def test_create_employee(self):
         """Test creating a recipe is successful."""
-        user = get_user_model().objects.create_user(
-            'test@example.com',
-            'testpass123'
+        user = create_user()
+        company = models.Company.objects.create(
+            name='Juanse Café',
+            description='Juanse Company in Bogota',
+            address='101 St.',
+            city='Bogotá D.C.',
+            user=user
         )
         employee = models.Employee.objects.create(
             user=user,
             department='HR',
             job_title='MID',
-            is_active=True
+            is_active=True,
+            company=company
         )
 
         # Means that the print value of the employee object is its title.
-        employee_string = f"{employee.user.name} - {employee.job_title} ({employee.department})"
+        employee_string = f"{user.name} - {company.name}"
         self.assertEqual(str(employee), employee_string)
 
     def test_create_company(self):
         """Test creating a recipe is successful."""
-        user = get_user_model().objects.create_user(
-            'test@example.com',
-            'testpass123'
-        )
+        user = create_user()
+
         company = models.Company.objects.create(
             name='Juan',
             description='Company in Bogota',
             address='101 St.',
             city='Bogotá D.C.',
-            employee=user
+            user=user
         )
 
         # Means that the print value of the employee object is its title.
