@@ -107,13 +107,13 @@ class MainActivity : AppCompatActivity() {
         }
         // Add mic button listener
         binding.buttonMic?.setOnClickListener {
-            if (!isRecording) {
+            if (!isRecording && !isTranscribing) {
                 // Start recording
                 if (checkPermissions()) {
                     startRecording()
                     binding.buttonMic?.setColorFilter(ContextCompat.getColor(this, R.color.colorAccent))
                 }
-            } else {
+            } else if (isRecording) {
                 // Stop recording
                 stopRecording()
                 binding.buttonMic?.clearColorFilter()
@@ -278,7 +278,7 @@ class MainActivity : AppCompatActivity() {
             recorder.setFilePath(wavFile?.absolutePath)
             recorder.start()
             isRecording = true
-            binding.buttonMic?.isEnabled = false
+            binding.buttonMic?.isEnabled = true // Keep enabled for toggle
             Log.d(TAG, "Recording started")
         }
     }
@@ -287,7 +287,7 @@ class MainActivity : AppCompatActivity() {
         if (isRecording) {
             recorder.stop()
             isRecording = false
-            binding.buttonMic?.isEnabled = true
+            binding.buttonMic?.isEnabled = false // Temporarily disable while processing
             Log.d(TAG, "Recording stopped")
         }
     }
@@ -307,6 +307,7 @@ class MainActivity : AppCompatActivity() {
                                 binding.editTextMessage?.hint = "Type your message"
                                 binding.editTextMessage?.isEnabled = true
                                 binding.buttonSend?.isEnabled = true
+                                binding.buttonMic?.isEnabled = true
                                 isTranscribing = false
                             }
                         }
