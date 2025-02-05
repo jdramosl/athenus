@@ -1,4 +1,4 @@
-package com.whispertflite.utils;
+package co.edu.unal.athenus.utils;
 
 import static java.lang.Math.cos;
 import static java.lang.Math.log10;

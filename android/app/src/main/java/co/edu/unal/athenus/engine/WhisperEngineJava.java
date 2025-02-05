@@ -8,8 +8,8 @@ import android.util.Log;
 //import com.google.android.gms.tflite.java.TfLite;
 
 
-import com.whispertflite.utils.WaveUtil;
-import com.whispertflite.utils.WhisperUtil;
+import co.edu.unal.athenus.utils.WaveUtil;
+import co.edu.unal.athenus.utils.WhisperUtil;
 
 import org.tensorflow.lite.DataType;
 import org.tensorflow.lite.Interpreter;

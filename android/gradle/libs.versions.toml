@@ -20,7 +20,11 @@ roomCompiler = "2.6.1"
 litertApi = "1.0.1"
 litert = "1.0.1"
 tensorflowLite = "2.14.0"
+tensorflowLiteGpu = "2.13.0"
+tensorflowLiteGpuDelegatePlugin = "0.4.4"
+tensorflowLiteMetadata = "0.4.4"
 tensorflowLiteSupport = "0.4.4"
+tensorflowLiteVersion = "2.13.0"
 
 [libraries]
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
@@ -49,7 +53,11 @@ okhttp-v4110 = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttpVe
 litert-api = { group = "com.google.ai.edge.litert", name = "litert-api", version.ref = "litertApi" }
 litert = { group = "com.google.ai.edge.litert", name = "litert", version.ref = "litert" }
 tensorflow-lite = { module = "org.tensorflow:tensorflow-lite", version.ref = "tensorflowLite" }
+tensorflow-lite-gpu = { module = "org.tensorflow:tensorflow-lite-gpu", version.ref = "tensorflowLiteGpu" }
+tensorflow-lite-gpu-delegate-plugin = { module = "org.tensorflow:tensorflow-lite-gpu-delegate-plugin", version.ref = "tensorflowLiteGpuDelegatePlugin" }
+tensorflow-lite-metadata = { module = "org.tensorflow:tensorflow-lite-metadata", version.ref = "tensorflowLiteMetadata" }
 tensorflow-lite-support = { module = "org.tensorflow:tensorflow-lite-support", version.ref = "tensorflowLiteSupport" }
+tensorflow-lite-v2130 = { module = "org.tensorflow:tensorflow-lite", version.ref = "tensorflowLiteVersion" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

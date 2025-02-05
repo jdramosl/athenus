@@ -11,7 +11,7 @@ import android.util.Log;
 
 import androidx.core.app.ActivityCompat;
 
-import com.whispertflite.utils.WaveUtil;
+import co.edu.unal.athenus.utils.WaveUtil;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;

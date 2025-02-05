@@ -33,6 +33,14 @@
             android:background="@drawable/edit_text_background"
             android:textColor="#000000"
             android:textColorHint="#808080"/>
+        <ImageButton
+            android:id="@+id/buttonMic"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="@drawable/ic_mic"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:layout_marginHorizontal="8dp"
+            android:contentDescription="Record audio"/>
 
         <Button
             android:id="@+id/buttonSend"
