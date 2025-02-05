@@ -98,7 +98,7 @@ class EmployeeViewSet(
             return Response({"error": "No message provided"}, status=status.HTTP_400_BAD_REQUEST)
 
         # Make the external POST request
-        url = "https://eb55-186-31-183-18.ngrok-free.app/query/"
+        url = "https://6600-186-31-183-18.ngrok-free.app/query/"
         headers = {"Content-Type": "application/json"}
         payload = {"text": user_message}
 
