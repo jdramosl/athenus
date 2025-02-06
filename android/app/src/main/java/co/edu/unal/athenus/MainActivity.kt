@@ -116,9 +116,7 @@ class MainActivity : AppCompatActivity() {
         binding.buttonSend?.setOnClickListener {
             val userMessage = binding.editTextMessage?.text.toString()
             if (userMessage.isNotBlank()) {
-                messages.add(Message(userMessage, true))
-                adapter.notifyDataSetChanged()
-                binding.buttonSend?.isEnabled = false
+                binding.buttonSend?.isEnabled = false 
                 binding.buttonSend?.text = "Loading..."
                 sendPostRequest(userMessage)
                 binding.editTextMessage?.text?.clear()
@@ -329,17 +327,15 @@ class MainActivity : AppCompatActivity() {
 
 
     private fun sendPostRequest(userMessage: String) {
-        // Add user message to UI
+        // Add user message to UI only once
         messages.add(Message(userMessage, true))
         adapter.notifyDataSetChanged()
-        binding.buttonSend?.isEnabled = false
-        binding.buttonSend?.text = "Loading..."
 
         // Launch coroutine in lifecycleScope
         lifecycleScope.launch {
             try {
                 val response = withContext(Dispatchers.IO) {
-                    model.generateContent(userMessage)  // Call Gemini API
+                    model.generateContent(userMessage)
                 }
                 val geminiResponse = response.text.toString()
 
