@@ -69,6 +69,12 @@ class MainActivity : AppCompatActivity() {
         apiKey = Constants.geminiApiKey
     )
 
+    val chat = model.startChat(
+        history = listOf(
+            content(role = "model") { text("You are called Athenus Assistant. You are good and helpful assisting companies and employees.") }
+        )
+    )
+
     private fun copyAssetsToSdcard(extensions: Array<String>) {
         val assetManager = assets
         try {
@@ -335,7 +341,7 @@ class MainActivity : AppCompatActivity() {
         lifecycleScope.launch {
             try {
                 val response = withContext(Dispatchers.IO) {
-                    model.generateContent(userMessage)
+                    chat.sendMessage(userMessage)
                 }
                 val geminiResponse = response.text.toString()
 
