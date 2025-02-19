@@ -8,16 +8,58 @@ import os
 
 
 class App:
-    def __init__(self):
-        load_dotenv()
-        logging.basicConfig(level=logging.INFO)
-        self.logger = logging.getLogger(__name__)
-        self.embedding_model = "voyage-multilingual-2"
-        self.chat_model = os.getenv("CHAT_MODEL", "llama3.2")
-        self.chunk_size = int(os.getenv("CHUNK_SIZE", 1000))
-        self.chunk_overlap = int(os.getenv("CHUNK_OVERLAP", 200))
-        self.role_loaders = {}
+    _instance = None
+    _initialized = False
 
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(App, cls).__new__(cls)
+        return cls._instance
+    def __init__(self):
+            if not self._initialized:
+                load_dotenv()
+                logging.basicConfig(level=logging.INFO)
+                self.logger = logging.getLogger(__name__)
+                self.embedding_model = "voyage-multilingual-2"
+                self.chat_model = os.getenv("CHAT_MODEL", "llama3.2")
+                self.chunk_size = int(os.getenv("CHUNK_SIZE", 1000))
+                self.chunk_overlap = int(os.getenv("CHUNK_OVERLAP", 200))
+                self.role_handlers = {}
+                self.initialize_role_handlers()
+                self._initialized = True
+    def initialize_role_handlers(self):
+        """Initialize handlers for all roles at startup"""
+        for role in ROLE_PDF_MAPPING.keys():
+            try:
+                self.logger.info(f"Initializing handler for role: {role}")
+
+                # Get allowed PDFs for the role
+                allowed_pdfs = self.get_pdf_files_for_role(role)
+
+                # Initialize loader with allowed PDFs
+                loader_service = PDFLoaderService(
+                    pdf_files=allowed_pdfs,
+                    chunk_size=self.chunk_size,
+                    chunk_overlap=self.chunk_overlap
+                )
+
+                # Load documents
+                docs = loader_service.load_pdfs()
+
+                if not docs:
+                    self.logger.warning(f"No documents found for role: {role}")
+                    continue
+
+                # Create role-specific retrieval system
+                retrieval_system = self.initialize_retrieval_system(docs, role)
+                chat_handler = self.initialize_chat_handler(retrieval_system)
+
+                # Store the handler
+                self.role_handlers[role] = chat_handler
+                self.logger.info(f"Successfully initialized handler for role: {role}")
+
+            except Exception as e:
+                self.logger.error(f"Error initializing handler for role {role}: {str(e)}")
     def get_pdf_files_for_role(self, role: str) -> list:
         """Get the list of PDF files accessible for a specific role"""
         if role not in ROLE_PDF_MAPPING:
@@ -73,3 +115,9 @@ class App:
             chat_model=self.chat_model,
             cross_encoder_model='cross-encoder/ms-marco-MiniLM-L-6-v2'
         )
+    def get_chat_handler(self, role: str):
+        """Get the appropriate chat handler for a role"""
+        if role not in self.role_handlers:
+            self.logger.warning(f"No handler found for role: {role}. Using default role.")
+            role = DEFAULT_ROLE
+        return self.role_handlers.get(role)

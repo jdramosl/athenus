@@ -24,6 +24,7 @@ class ChatHandler:
         self.retrieval_system = retrieval_system
         self.chat_model = chat_model
         self.cross_encoder = CrossEncoder(cross_encoder_model)
+        self.logger = logging.getLogger(__name__)
         self.llm = OllamaLLM(
             model=self.chat_model,
             temperature=0.0,
@@ -38,7 +39,7 @@ class ChatHandler:
             return_messages=True
         )
         self.prompt = ChatPromptTemplate.from_messages([
-            ("system", "You are a helpful assistant. Use the following context to answer the question in Spanish, paying close attention to the question details, thinking step by step, and providing a complete response."),
+            ("system", "You are a helpful assistant. Use the following context to answer the question in Spanish, paying close attention to the question details, thinking step by step, and providing a complete response. if context is not related to the question, you must only say: i dont have acces to that information"),
             ("human", "Context: {context}"),
             ("human", "Chat history: {chat_history}"),
             ("human", "Question: {question}")
@@ -148,18 +149,18 @@ class ChatHandler:
 
         self.messages.append({"role": "user", "content": query})
         try:
-            print("\nAnalizando documentos...")
+            self.logger.info("\nAnalizando documentos...")
             context = asyncio.run(self.get_relevant_context(query))
             formatted_prompt = self.prompt.format(
                 context=context,
                 question=query,
                 chat_history=self.memory.load_memory_variables({})["chat_history"]
             )
-            print("\nPrompt enviado al modelo:")
-            print(formatted_prompt)
+            self.logger.info("\nPrompt enviado al modelo:")
+            self.logger.info(formatted_prompt)
             response = self.chain.invoke({"context": context, "question": query})
             self.memory.save_context({"question": query}, {"output": response})
-            print("\nRespuesta:", response)
+            self.logger.info("\nRespuesta:", response)
             self.messages.append({"role": "assistant", "content": response})
 
             feedback = input("\n¿Deseas calificar la respuesta? (1-5, o presiona Enter para saltar): ")
@@ -169,5 +170,5 @@ class ChatHandler:
         except Exception as e:
             logging.error("Error procesando la consulta: %s", str(e))
             fallback = self.fallback_keyword_search(query)
-            print(f"\nError: Lo siento, pero encontré un error al procesar tu consulta. Esto es lo que encontré basado en una búsqueda por palabras clave: {fallback}")
+            self.logger.info(f"\nError: Lo siento, pero encontré un error al procesar tu consulta. Esto es lo que encontré basado en una búsqueda por palabras clave: {fallback}")
         return True

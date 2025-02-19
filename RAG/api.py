@@ -6,6 +6,8 @@ from dotenv import load_dotenv
 from config.roles import DEFAULT_ROLE, ROLE_PDF_MAPPING
 from app import App
 from chat.handler import ChatHandler
+#import loging
+import logging
 
 # Modelos Pydantic
 class Query(BaseModel):
@@ -21,17 +23,22 @@ class Response(BaseModel):
 app = FastAPI(title="RAG API", description="API para el sistema RAG")
 
 # Inicializar el sistema RAG
-rag_app = App()
+rag_app = None
 chat_handler = None
 
 @app.on_event("startup")
 async def startup_event():
-    """Inicializa el sistema RAG cuando arranca la API"""
+    """Initialize the RAG system when the API starts"""
     global rag_app
-    load_dotenv()
 
-    # Initialize the RAG application
-    rag_app = App()
+    if rag_app is None:
+        load_dotenv()
+        rag_app = App()
+
+        # Log the initialized roles
+        available_roles = list(rag_app.role_handlers.keys())
+        logging.info(f"Initialized handlers for roles: {available_roles}")
+
 
 @app.post("/query", response_model=Response)
 async def process_query(query: Query):
@@ -47,13 +54,13 @@ async def process_query(query: Query):
                 detail=f"Invalid role: {query.role}"
             )
 
-        # Create a new chat handler for each request
-        chat_handler = rag_app.get_or_create_role_loader(query.role)
+        # Get the pre-initialized chat handler for the role
+        chat_handler = rag_app.get_chat_handler(query.role)
 
         if not chat_handler:
             raise HTTPException(
                 status_code=403,
-                detail=f"No accessible documents for role: {query.role}"
+                detail=f"No handler available for role: {query.role}"
             )
 
         # Get relevant context
@@ -64,9 +71,6 @@ async def process_query(query: Query):
             "context": context,
             "question": query.text
         })
-
-        # Clean up after response is generated
-        del chat_handler
 
         return Response(answer=response, context=context)
 
