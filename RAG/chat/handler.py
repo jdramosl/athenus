@@ -53,7 +53,15 @@ class ChatHandler:
             | self.llm
         )
         self.messages = []
-
+    def __del__(self):
+        """Cleanup when the handler is destroyed"""
+        if hasattr(self, 'retrieval_system'):
+            # Clean up any resources
+            if hasattr(self.retrieval_system, 'vectorstore'):
+                try:
+                    self.retrieval_system.vectorstore = None
+                except:
+                    pass
     async def get_relevant_context(self, query: str) -> str:
         weighted_history = self.weight_chat_history()
         combined_query = f"{query} {weighted_history}"

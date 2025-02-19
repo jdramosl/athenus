@@ -12,8 +12,6 @@ class App:
         load_dotenv()
         logging.basicConfig(level=logging.INFO)
         self.logger = logging.getLogger(__name__)
-
-        self.pdf_files = ["rbf.pdf","art2.pdf","art1.pdf"]
         self.embedding_model = "voyage-multilingual-2"
         self.chat_model = os.getenv("CHAT_MODEL", "llama3.2")
         self.chunk_size = int(os.getenv("CHUNK_SIZE", 1000))
@@ -21,32 +19,53 @@ class App:
         self.role_loaders = {}
 
     def get_pdf_files_for_role(self, role: str) -> list:
-            """Get the list of PDF files accessible for a specific role"""
-            if role not in ROLE_PDF_MAPPING:
-                self.logger.warning(f"Unknown role: {role}. Using default role.")
-                return ROLE_PDF_MAPPING[DEFAULT_ROLE]
-            return ROLE_PDF_MAPPING[role]
+        """Get the list of PDF files accessible for a specific role"""
+        if role not in ROLE_PDF_MAPPING:
+            self.logger.warning(f"Unknown role: {role}. Using default role.")
+            role = DEFAULT_ROLE
+        return ROLE_PDF_MAPPING[role]
 
     def initialize_loader_service(self, role: str):
-            """Initialize loader service for a specific role"""
-            pdf_files = self.get_pdf_files_for_role(role)
-            return PDFLoaderService(
-                pdf_files=pdf_files,
+        """Initialize loader service for a specific role"""
+        pdf_files = self.get_pdf_files_for_role(role)
+        return PDFLoaderService(
+            pdf_files=pdf_files,
+            chunk_size=self.chunk_size,
+            chunk_overlap=self.chunk_overlap
+        )
+    def get_or_create_role_loader(self, role: str):
+        """Get or create a loader for a specific role"""
+        try:
+            # Always create a new loader for each request to ensure fresh document access
+            # Get allowed PDFs for the role
+            allowed_pdfs = self.get_pdf_files_for_role(role)
+
+            # Initialize loader with only allowed PDFs
+            loader_service = PDFLoaderService(
+                pdf_files=allowed_pdfs,
                 chunk_size=self.chunk_size,
                 chunk_overlap=self.chunk_overlap
             )
-    def get_or_create_role_loader(self, role: str):
-            """Get or create a loader for a specific role"""
-            if role not in self.role_loaders:
-                loader_service = self.initialize_loader_service(role)
-                docs = loader_service.load_pdfs()
-                retrieval_system = self.initialize_retrieval_system(docs)
-                chat_handler = self.initialize_chat_handler(retrieval_system)
-                self.role_loaders[role] = chat_handler
-            return self.role_loaders[role]
 
-    def initialize_retrieval_system(self, all_docs):
-        return RetrievalSystem(all_docs)
+            # Load only allowed documents
+            docs = loader_service.load_pdfs()
+
+            if not docs:
+                self.logger.warning(f"No accessible documents found for role: {role}")
+                return None
+
+            # Create role-specific retrieval system
+            retrieval_system = self.initialize_retrieval_system(docs, role)
+            chat_handler = self.initialize_chat_handler(retrieval_system)
+
+            return chat_handler
+
+        except Exception as e:
+            self.logger.error(f"Error creating loader for role {role}: {str(e)}")
+            return None
+
+    def initialize_retrieval_system(self, all_docs, role):
+            return RetrievalSystem(all_docs, role)
 
     def initialize_chat_handler(self, retrieval_system):
         return ChatHandler(

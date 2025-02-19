@@ -3,10 +3,9 @@ from pydantic import BaseModel
 from typing import Optional
 import uvicorn
 from dotenv import load_dotenv
-
+from config.roles import DEFAULT_ROLE, ROLE_PDF_MAPPING
 from app import App
 from chat.handler import ChatHandler
-from config.roles import DEFAULT_ROLE
 
 # Modelos Pydantic
 class Query(BaseModel):
@@ -36,31 +35,44 @@ async def startup_event():
 
 @app.post("/query", response_model=Response)
 async def process_query(query: Query):
-    """Procesa una consulta y devuelve la respuesta basada en el rol"""
+    """Process a query and return response based on role"""
     if not rag_app:
-        raise HTTPException(status_code=500, detail="El sistema no está inicializado")
+        raise HTTPException(status_code=500, detail="System not initialized")
 
     try:
-        # Get the appropriate chat handler for the role
+        # Validate role
+        if query.role not in ROLE_PDF_MAPPING:
+            raise HTTPException(
+                status_code=403,
+                detail=f"Invalid role: {query.role}"
+            )
+
+        # Create a new chat handler for each request
         chat_handler = rag_app.get_or_create_role_loader(query.role)
 
-        # Obtener contexto relevante
+        if not chat_handler:
+            raise HTTPException(
+                status_code=403,
+                detail=f"No accessible documents for role: {query.role}"
+            )
+
+        # Get relevant context
         context = await chat_handler.get_relevant_context(query.text)
 
-        # Generar respuesta
+        # Generate response
         response = chat_handler.chain.invoke({
             "context": context,
             "question": query.text
         })
 
-        # Guardar feedback si se proporciona
-        if query.feedback is not None:
-            chat_handler.save_feedback(query.text, response, query.feedback)
+        # Clean up after response is generated
+        del chat_handler
 
         return Response(answer=response, context=context)
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.get("/health")
 async def health_check():
