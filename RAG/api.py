@@ -6,10 +6,12 @@ from dotenv import load_dotenv
 
 from app import App
 from chat.handler import ChatHandler
+from config.roles import DEFAULT_ROLE
 
 # Modelos Pydantic
 class Query(BaseModel):
     text: str
+    role: str = DEFAULT_ROLE
     feedback: Optional[int] = None
 
 class Response(BaseModel):
@@ -26,26 +28,22 @@ chat_handler = None
 @app.on_event("startup")
 async def startup_event():
     """Inicializa el sistema RAG cuando arranca la API"""
-    global chat_handler
+    global rag_app
     load_dotenv()
 
-    # Inicializar el sistema
-    loader_service = rag_app.initialize_loader_service()
-    all_docs = loader_service.load_pdfs()
-
-    if not all_docs:
-        raise HTTPException(status_code=500, detail="No se pudieron cargar los documentos")
-
-    retrieval_system = rag_app.initialize_retrieval_system(all_docs)
-    chat_handler = rag_app.initialize_chat_handler(retrieval_system)
+    # Initialize the RAG application
+    rag_app = App()
 
 @app.post("/query", response_model=Response)
 async def process_query(query: Query):
-    """Procesa una consulta y devuelve la respuesta"""
-    if not chat_handler:
+    """Procesa una consulta y devuelve la respuesta basada en el rol"""
+    if not rag_app:
         raise HTTPException(status_code=500, detail="El sistema no está inicializado")
 
     try:
+        # Get the appropriate chat handler for the role
+        chat_handler = rag_app.get_or_create_role_loader(query.role)
+
         # Obtener contexto relevante
         context = await chat_handler.get_relevant_context(query.text)
 
