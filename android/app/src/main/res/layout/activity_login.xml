@@ -1,0 +1,59 @@
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center_vertical"
+    android:padding="25dp"
+    android:background="@drawable/login">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Login"
+        android:textSize="40dp"
+        android:fontFamily="sans-serif-condensed-medium"
+        android:textAlignment="center"
+        android:padding="12dp"
+        android:textColor="@android:color/white"
+        android:layout_marginBottom="8dp" />
+
+    <EditText
+        android:id="@+id/etUsername"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="  Username"
+        android:inputType="text"
+        android:background="@drawable/edit_text_background"
+        android:padding="12dp"
+        android:textColor="@android:color/black"
+        android:drawableLeft="@drawable/baseline_person_24"
+        android:layout_marginBottom="10dp" />
+
+    <EditText
+        android:id="@+id/etPassword"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="20dp"
+        android:background="@drawable/edit_text_background"
+        android:drawableLeft="@drawable/baseline_password_24"
+        android:hint="  Password"
+        android:inputType="textPassword"
+        android:padding="12dp"
+        android:paddingLeft="10dp"
+        android:textColor="@android:color/black" />
+
+    <Button
+        android:id="@+id/btnLogin"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Login" />
+
+    <TextView
+        android:id="@+id/tvGoToRegister"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Don't have an account? Register here"
+        android:textColor="@android:color/holo_blue_light"
+        android:layout_marginTop="8dp" />
+</LinearLayout>
