@@ -30,7 +30,8 @@ ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
     '136e-2a09-bac1-1a20-40-00-286-20.ngrok-free.app',
-    'ae55-2a09-bac5-26f9-10f-00-1b-26b.ngrok-free.app'
+    'ae55-2a09-bac5-26f9-10f-00-1b-26b.ngrok-free.app',
+    'generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
 ]
 
 

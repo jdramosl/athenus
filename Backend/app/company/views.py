@@ -1,11 +1,20 @@
 """
 Views for the Company API's.
 """
+import os
 import requests
 from rest_framework import (
     viewsets,
     mixins # Additional funct. to a view  noqa
 )
+
+from drf_spectacular.utils import (
+    extend_schema_view,
+    extend_schema,
+    OpenApiParameter,
+    OpenApiTypes
+)
+
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import status
@@ -14,12 +23,23 @@ from rest_framework.permissions import IsAuthenticated
 
 from core.models import (
     Company,
-    Employee
+    Employee,
+    ModelLLM,
+    Message
 )
 from company import serializers
-
+from rest_framework.utils import json
 
 CHATBOT_URL = 'https://eb55-186-31-183-18.ngrok-free.app/query'
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+HEADERS = {
+    "Content-Type": "application/json"
+}
+PARAMS = {
+    "key": f"{GEMINI_API_KEY}"  # API Key as a query parameter
+}
+
+
 
 class CompanyViewSet(viewsets.ModelViewSet):
     """
@@ -115,3 +135,133 @@ class EmployeeViewSet(
             "chatbot_response": response_data
         }, status=status.HTTP_200_OK)
 
+
+@extend_schema_view(
+    list=extend_schema(
+        parameters=[
+            OpenApiParameter(
+                'company',
+                OpenApiTypes.STR,
+                description='ID of Company'
+            ),
+        ]
+    )
+)
+class ModelLLMViewSet(
+    mixins.CreateModelMixin,
+    mixins.UpdateModelMixin,
+    mixins.ListModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet
+):
+    """Manage LLM models in database."""
+    serializer_class = serializers.ModelLLMSerializer
+    queryset = ModelLLM.objects.all()
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def _params_to_ints(self, qs):
+        """Convert a list of strings to integers."""
+        return [int(str_id) for str_id in qs.split(',')]
+
+    def get_queryset(self):
+        queryset = self.queryset
+
+        company = self.request.query_params.get('company')
+
+        if company:
+            company_id = self._params_to_ints(company)
+            queryset = queryset.filter(company__id__in=company_id)
+            return queryset.order_by('-name')
+
+        return queryset.order_by('-name')  # Return empty queryset if no company is selected.  # noqa
+
+
+class MessageViewSet(
+    mixins.CreateModelMixin,
+    mixins.UpdateModelMixin,
+    mixins.ListModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet
+)         :
+    """Manage LLM models in database."""
+    serializer_class = serializers.MessageSerializer
+    queryset = Message.objects.all()
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    # GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
+
+    def perform_create(self, serializer):
+        """
+        Create a new Company.
+        When we create a new Company we call this method.
+
+        Here it is assumed that the serializer is validated.
+        """
+        # Save the initial message and assign the logged-in user
+        message = serializer.save(user=self.request.user)
+
+        # If the message is from the user, call the model's API
+        if message.role == "user":
+            model_instance = message.model  # Get associated ModelLLM instance
+            base_url = model_instance.base_url  # Retrieve base_url from ModelLLM
+
+            try:
+                # Define the request payload
+                PAYLOAD = {
+                    "contents": [{
+                        "parts": [{"text": f"{message.message}"}]
+                    }]
+                }
+                # DEBUG
+                print(f'{base_url} - {message.message}')
+                response = requests.post(
+                    base_url,
+                    headers=HEADERS,
+                    params=PARAMS,
+                    json=PAYLOAD,
+                    timeout=100,
+                )
+
+                # Check for errors
+                response.raise_for_status()
+
+                # Parse JSON response
+                data = response.json()
+                print("Response:", json.dumps(data, indent=2))  # Pretty print response
+                print()
+
+                if response.status_code == 200:
+                    print('Success - 200 - LLM endpoint')
+
+                    try:
+                        response_json = response.json()
+                        # Extract message text from the response structure
+                        response_data = (
+                            response_json.get("candidates", [{}])[0]
+                            .get("content", {})
+                            .get("parts", [{}])[0]
+                            .get("text", "No response")
+                        )
+
+                        # Create a new message with role 'model'
+                        Message.objects.create(
+                            role="model",
+                            message=response_data,
+                            model=model_instance,
+                            user=message.user  # Link to the same user
+                        )
+                        print('Model role message created in DB.')
+
+                    except (IndexError, KeyError, TypeError) as e:
+                        print(f"Error parsing LLM response: {e}, Response: {response_json}")
+                else:
+                    print(f"API error: {response.status_code}, {response.text}")
+
+            except requests.RequestException as e:
+                print(f"Request failed: {e}")  # Log the error
+
+    def get_queryset(self):
+        """Filter queryset to authenticated user"""
+        return self.queryset.filter(user=self.request.user).order_by('-created_at')
