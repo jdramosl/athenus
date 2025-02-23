@@ -94,3 +94,62 @@ class ModelTests(TestCase):
 
         # Means that the print value of the employee object is its title.
         self.assertEqual(str(company), company.name)
+
+    def test_create_llmmodel(self):
+        """Test creating a recipe is successful."""
+        user = create_user()
+
+        # Company
+        company = models.Company.objects.create(
+            name='Juanse Café',
+            description='Juanse Company in Bogota',
+            address='101 St.',
+            city='Bogotá D.C.',
+            user=user
+        )
+
+        # LLM model
+        llm_model = models.ModelLLM.objects.create(
+            name='Gemini',
+            issuer='Google',
+            base_url='https://generativelanguage.googleapis.com',
+            company=company
+        )
+
+        # Means that the print value of the employee object is its title.
+        self.assertEqual(llm_model.company.id, company.id)
+
+    def test_create_message(self):
+        """Test creating a recipe is successful."""
+        user = create_user()
+
+        # Company
+        company = models.Company.objects.create(
+            name='Juanse Café',
+            description='Juanse Company in Bogota',
+            address='101 St.',
+            city='Bogotá D.C.',
+            user=user
+        )
+
+        # LLM model
+        llm_model = models.ModelLLM.objects.create(
+            name='Gemini',
+            issuer='Google',
+            base_url='https://generativelanguage.googleapis.com',
+            company=company
+        )
+
+        message = models.Message.objects.create(
+            role='User',
+            message='Why the sky is blue?',
+            model=llm_model,
+            user=user
+        )
+
+        message_str = f'Message: {user.name} - {message.message}'
+
+        #  Assertions
+        self.assertEqual(llm_model.company.id, company.id)
+        self.assertEqual(message.model.id, llm_model.id)
+        self.assertEqual(str(message), message_str)

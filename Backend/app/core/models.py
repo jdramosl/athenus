@@ -106,3 +106,41 @@ class Employee(models.Model):
 
     def __str__(self):
         return f"{self.user.get_full_name()} - {self.company.name}"
+
+
+class ModelLLM(models.Model):
+    """
+    LLM models model class.
+    """
+    name = models.CharField(max_length=255)
+    issuer = models.CharField(max_length=255)
+    base_url = models.CharField(max_length=255)
+
+    company = models.ForeignKey(
+        Company,
+        on_delete=models.CASCADE,
+        related_name='llm_models'
+    )
+
+
+class Message(models.Model):
+    """
+    LLM models model class.
+    """
+    role = models.CharField(max_length=255)
+    message = models.TextField(blank=False)
+
+    model = models.ForeignKey(
+        ModelLLM,
+        on_delete=models.CASCADE,
+        related_name='model_message'
+    )
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='user_messages'
+    )
+
+    def __str__(self):
+        return f"Message: {self.user.get_full_name()} - {self.message}"
