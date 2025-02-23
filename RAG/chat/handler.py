@@ -3,18 +3,14 @@ import json
 import logging
 from typing import List, Tuple
 import heapq
-#import Document from RAG/retrieval/retrieval_system.py
 from langchain.schema import Document
-
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.prompts import ChatPromptTemplate
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from langchain.memory import ConversationSummaryBufferMemory
 from langchain_ollama import OllamaLLM
 from sentence_transformers import CrossEncoder
-
-from retrieval.retrieval_system import RetrievalSystem  # Asegúrate de que la ruta de importación es correcta
-
+from retrieval.retrieval_system import RetrievalSystem  # Asegúrate de que la ruta es correcta
 
 class ChatHandler:
     """
@@ -53,7 +49,9 @@ class ChatHandler:
             | self.prompt
             | self.llm
         )
-        self.messages = []
+        # Diccionario para almacenar por userId el historial de mensajes
+        self.sessions = {}
+
     def __del__(self):
         """Cleanup when the handler is destroyed"""
         if hasattr(self, 'retrieval_system'):
@@ -63,8 +61,19 @@ class ChatHandler:
                     self.retrieval_system.vectorstore = None
                 except:
                     pass
-    async def get_relevant_context(self, query: str) -> str:
-        weighted_history = self.weight_chat_history()
+
+    def weight_chat_history(self, messages: List[dict], max_messages: int = 2, decay_factor: float = 0.9) -> str:
+        recent_history = messages[-max_messages:]
+        weighted_history = []
+        for i, message in enumerate(reversed(recent_history)):
+            weight = decay_factor ** i
+            weighted_history.append(f"{weight:.2f} * {message['content']}")
+        return " ".join(reversed(weighted_history))
+
+    async def get_relevant_context(self, query: str, userId: str) -> str:
+        # Obtener o inicializar la sesión de mensajes
+        session_messages = self.sessions.get(userId, [])
+        weighted_history = self.weight_chat_history(session_messages)
         combined_query = f"{query} {weighted_history}"
 
         vector_results = await self.vector_search(combined_query)
@@ -72,7 +81,7 @@ class ChatHandler:
 
         if not vector_results and not bm25l_results:
             logging.warning("Ambas búsquedas, vectorial y BM25L, fallaron. Recurriendo a búsqueda por palabras clave.")
-            return self.fallback_keyword_search(combined_query)
+            return await self.fallback_keyword_search(combined_query)
 
         combined_results = []
         for doc in vector_results:
@@ -91,10 +100,45 @@ class ChatHandler:
         top_results = heapq.nsmallest(10, combined_results)
         docs_to_rerank = [doc for _, doc in top_results]
         original_scores = [-score for score, _ in top_results]
-
         reranked_docs = self.rerank_results(docs_to_rerank, combined_query, original_scores)
         return "\n".join(reranked_docs[:5])
 
+    async def handle_query(self, query: str, userId: str):
+        if query.lower() == 'salir':
+            return False
+
+        # Inicializar la sesión si no existe
+        if userId not in self.sessions:
+            self.sessions[userId] = []
+        session_messages = self.sessions[userId]
+
+        session_messages.append({"role": "user", "content": query})
+        try:
+            self.logger.info("\nAnalizando documentos...")
+            # Awaits get_relevant_context instead of using asyncio.run
+            context = await self.get_relevant_context(query, userId)
+            formatted_prompt = self.prompt.format(
+                context=context,
+                question=query,
+                chat_history=self.memory.load_memory_variables({})["chat_history"]
+            )
+            self.logger.info("\nPrompt enviado al modelo:")
+            self.logger.info(formatted_prompt)
+            response = self.chain.invoke({"context": context, "question": query})
+            self.memory.save_context({"question": query}, {"output": response})
+            self.logger.info("\nRespuesta: %s", response)
+            session_messages.append({"role": "assistant", "content": response})
+
+            feedback = input("\n¿Deseas calificar la respuesta? (1-5, o presiona Enter para saltar): ")
+            if feedback.isdigit() and 1 <= int(feedback) <= 5:
+                self.save_feedback(query, response, int(feedback))
+
+        except Exception as e:
+            logging.error("Error procesando la consulta: %s", str(e))
+            fallback = self.fallback_keyword_search(query)
+            self.logger.info(f"\nError: Lo siento, pero encontré un error al procesar tu consulta. Basado en búsqueda por palabras clave: {fallback}")
+            return fallback
+        return response
     async def vector_search(self, query: str) -> List[Document]:
         try:
             return self.retrieval_system.vectorstore.similarity_search(query, k=10)
@@ -108,14 +152,6 @@ class ChatHandler:
         except Exception as e:
             logging.error(f"Búsqueda BM25L fallida: {str(e)}")
             return []
-
-    def weight_chat_history(self, max_messages: int = 2, decay_factor: float = 0.9) -> str:
-        recent_history = self.messages[-max_messages:]
-        weighted_history = []
-        for i, message in enumerate(reversed(recent_history)):
-            weight = decay_factor ** i
-            weighted_history.append(f"{weight:.2f} * {message['content']}")
-        return " ".join(reversed(weighted_history))
 
     def rerank_results(self, docs: List[str], query: str, original_scores: List[float]) -> List[str]:
         pairs = [[query, doc] for doc in docs]
@@ -142,33 +178,3 @@ class ChatHandler:
         with open("feedback_log.json", "a") as f:
             json.dump(feedback_data, f)
             f.write("\n")
-
-    def handle_query(self, query: str):
-        if query.lower() == 'salir':
-            return False
-
-        self.messages.append({"role": "user", "content": query})
-        try:
-            self.logger.info("\nAnalizando documentos...")
-            context = asyncio.run(self.get_relevant_context(query))
-            formatted_prompt = self.prompt.format(
-                context=context,
-                question=query,
-                chat_history=self.memory.load_memory_variables({})["chat_history"]
-            )
-            self.logger.info("\nPrompt enviado al modelo:")
-            self.logger.info(formatted_prompt)
-            response = self.chain.invoke({"context": context, "question": query})
-            self.memory.save_context({"question": query}, {"output": response})
-            self.logger.info("\nRespuesta:", response)
-            self.messages.append({"role": "assistant", "content": response})
-
-            feedback = input("\n¿Deseas calificar la respuesta? (1-5, o presiona Enter para saltar): ")
-            if feedback.isdigit() and 1 <= int(feedback) <= 5:
-                self.save_feedback(query, response, int(feedback))
-
-        except Exception as e:
-            logging.error("Error procesando la consulta: %s", str(e))
-            fallback = self.fallback_keyword_search(query)
-            self.logger.info(f"\nError: Lo siento, pero encontré un error al procesar tu consulta. Esto es lo que encontré basado en una búsqueda por palabras clave: {fallback}")
-        return True
