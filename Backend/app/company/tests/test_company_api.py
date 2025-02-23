@@ -154,3 +154,81 @@ class PrivateCompanyApiTest(TestCase):
             self.assertEqual(getattr(company, k), v)
         # Check user from API
         self.assertEqual(company.user, self.user)
+
+    # def test_create_recipe_with_new_tags(self):
+    #     """Test creating a recipe with new tags."""
+    #     payload = {
+    #         "title": "Thai Prawn Curry",
+    #         "time_minutes": 30,
+    #         "price": Decimal("2.50"),
+    #         "tags": [
+    #             {
+    #                 "name": "Thai",
+    #             },
+    #             {
+    #                 "name": "Dinner",
+    #             },
+    #         ],
+    #     }
+    #     # Format JSON is required so it accepts nested objects.  noqa
+    #     res = self.client.post(RECIPES_URL, payload, format="json")
+    #
+    #     self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+    #     recipes = Recipe.objects.filter(user=self.user)
+    #     # This asert is good practice when trying to catch if recipe[0] gives index out of bound error.  # noqa
+    #     self.assertEqual(recipes.count(), 1)
+    #     recipe = recipes[0]
+    #
+    #     # Count
+    #     self.assertEqual(recipe.tags.count(), 2)
+    #
+    #     for tag in payload["tags"]:
+    #         # For every tag in payload, try to get it from db with name and user, check it exists.  # noqa
+    #         exists = recipe.tags.filter(
+    #             name=tag["name"],
+    #             user=self.user,
+    #         ).exists()
+    #         self.assertTrue(exists)
+    #
+    # def test_create_recipe_with_existing_tags(self):
+    #     """Test creating a recipe with an existing tag."""
+    #     # This is a tag created beforehand.
+    #     tag_indian = Tag.objects.create(user=self.user, name="Indian")
+    #
+    #     # This is the payload for a new recipe that include  # noqa
+    #     # 1. A tag created above, and a non-existing tag gets created after the recipe.  # noqa
+    #     payload = {
+    #         "title": "Pongal",
+    #         "time_minutes": 60,
+    #         "price": Decimal("4.50"),
+    #         "tags": [{"name": "Indian"}, {"name": "Breakfast"}],
+    #     }
+    #     res = self.client.post(RECIPES_URL, payload, format="json")
+    #
+    #     self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+    #     recipes = Recipe.objects.filter(user=self.user)
+    #     self.assertEqual(recipes.count(), 1)
+    #     recipe = recipes[0]
+    #     self.assertEqual(recipe.tags.count(), 2)
+    #     # Here we check the created tag is indeed in the recipe tags.  # noqa
+    #     self.assertIn(tag_indian, recipe.tags.all())
+    #
+    #     for tag in payload["tags"]:
+    #         exists = recipe.tags.filter(
+    #             name=tag["name"],
+    #             user=self.user,
+    #         ).exists()
+    #         self.assertTrue(exists)
+    #
+    # def test_create_tag_on_update(self):
+    #     """Test creating a tag when updating a recipe."""
+    #     recipe = create_recipe(user=self.user)
+    #
+    #     payload = {"tags": [{"name": "Lunch"}]}
+    #     url = detail_url(recipe.id)
+    #     res = self.client.patch(url, payload, format="json")
+    #
+    #     self.assertEqual(res.status_code, status.HTTP_200_OK)
+    #     # Retrieve new tag
+    #     new_tag = Tag.objects.get(user=self.user, name="Lunch")
+    #     self.assertIn(new_tag, recipe.tags.all())

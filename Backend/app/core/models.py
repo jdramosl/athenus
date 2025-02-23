@@ -2,12 +2,13 @@
 Database Models.
 """
 from django.conf import settings
-from django.db import models # noqa
+from django.db import models  # noqa
 from django.contrib.auth.models import (
     AbstractBaseUser,
     BaseUserManager,
     PermissionsMixin,
 )
+from django.utils.timezone import now
 
 
 class UserManager(BaseUserManager):
@@ -141,6 +142,9 @@ class Message(models.Model):
         on_delete=models.CASCADE,
         related_name='user_messages'
     )
+
+    created_at = models.DateTimeField(auto_now_add=True)  # Set once when created.  # noqa
+    updated_at = models.DateTimeField(auto_now=True)  # Update on every save.  # noqa
 
     def __str__(self):
         return f"Message: {self.user.get_full_name()} - {self.message}"

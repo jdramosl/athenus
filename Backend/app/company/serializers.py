@@ -6,7 +6,9 @@ from django.shortcuts import get_object_or_404
 
 from core.models import (
     Company,
-    Employee
+    Employee,
+    ModelLLM,
+    Message
 )
 
 
@@ -75,7 +77,7 @@ class ModelLLMSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ModelLLM
-        fields = ['id', 'name', 'issuer', 'base_url']
+        fields = ['id', 'name', 'issuer', 'base_url', 'company']
         read_only_fields = ['id']
 
 
@@ -83,6 +85,6 @@ class MessageSerializer(serializers.ModelSerializer):
     """Serializer for Message with LLM model."""
 
     class Meta:
-        model = ModelLLM
-        fields = ['id', 'role', 'message', 'base_url', 'model']
+        model = Message
+        fields = ['id', 'role', 'message', 'model', 'created_at', 'updated_at']
         read_only_fields = ['id']
