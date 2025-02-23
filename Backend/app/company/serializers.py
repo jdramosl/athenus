@@ -70,4 +70,19 @@ class EmployeeSerializer(serializers.ModelSerializer):
         return instance
 
 
+class ModelLLMSerializer(serializers.ModelSerializer):
+    """Serializer for LLM model."""
 
+    class Meta:
+        model = ModelLLM
+        fields = ['id', 'name', 'issuer', 'base_url']
+        read_only_fields = ['id']
+
+
+class MessageSerializer(serializers.ModelSerializer):
+    """Serializer for Message with LLM model."""
+
+    class Meta:
+        model = ModelLLM
+        fields = ['id', 'role', 'message', 'base_url', 'model']
+        read_only_fields = ['id']

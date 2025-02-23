@@ -14,7 +14,9 @@ from rest_framework.permissions import IsAuthenticated
 
 from core.models import (
     Company,
-    Employee
+    Employee,
+    ModelLLM,
+    Message
 )
 from company import serializers
 
@@ -115,3 +117,4 @@ class EmployeeViewSet(
             "chatbot_response": response_data
         }, status=status.HTTP_200_OK)
 
+# class LLM
