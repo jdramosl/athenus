@@ -2,5 +2,7 @@
 <network-security-config>
     <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="true">10.0.2.2</domain>
+        <domain includeSubdomains="true">eb55-186-31-183-18.ngrok-free.app</domain>
+        <domain includeSubdomains="true">ae55-2a09-bac5-26f9-10f-00-1b-26b.ngrok-free.app</domain>
     </domain-config>
 </network-security-config>
