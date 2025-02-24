@@ -1,0 +1,26 @@
+<resources>
+    <string name="app_name">Android Athenus</string>
+    <string name="first_human">You go first.</string>
+    <string name="turn_human">Your turn human.</string>
+    <string name="turn_computer">Android\'s turn.</string>
+    <string name="result_tie">It\'s a tie.</string>
+    <string name="result_human_wins">You won!</string>
+    <string name="result_computer_wins">Android won!</string>
+    <string name="new_game">New Game</string>
+    <string name="new_game_button">New Game</string>
+    <string name="difficulty_choose">Choose Difficulty</string>
+    <string name="difficulty_easy">Easy</string>
+    <string name="difficulty_harder">Harder</string>
+    <string name="difficulty_expert">Expert</string>
+    <string name="cancel">Cancel</string>
+    <string name="quit_question">Are you sure you want to quit?</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
+    <string name="quit">Quit</string>
+    <string name="coded_by">Programado por Juan David Ramos López</string>
+    <string name="about">About</string>
+    <string name="info">info</string>
+    <string name="reset_scores">Reset scores</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+</resources>
