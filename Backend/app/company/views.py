@@ -199,68 +199,151 @@ class MessageViewSet(
 
         Here it is assumed that the serializer is validated.
         """
-        # Save the initial message and assign the logged-in user
+        # Save the user message first
         message = serializer.save(user=self.request.user)
 
-        # If the message is from the user, call the model's API
-        if message.role == "user":
-            model_instance = message.model  # Get associated ModelLLM instance
-            base_url = model_instance.base_url  # Retrieve base_url from ModelLLM
+        #if message.role == 'user':
+        model_instance = message.model
+        # Initialize response_data in case of failure
+        response_payload = {"role": "model", "content": "No response from model"}
+        base_url = model_instance.base_url
 
-            try:
-                # Define the request payload
-                PAYLOAD = {
-                    "contents": [{
-                        "parts": [{"text": f"{message.message}"}]
-                    }]
-                }
-                # DEBUG
-                print(f'{base_url} - {message.message}')
-                response = requests.post(
-                    base_url,
-                    headers=HEADERS,
-                    params=PARAMS,
-                    json=PAYLOAD,
-                    timeout=100,
-                )
+        print(f'base_url - {base_url}')
 
-                # Check for errors
-                response.raise_for_status()
+        # Fetch conversation history for the same user and model
+        conversation_history = Message.objects.filter(
+            user=message.user, model=model_instance
+        ).order_by("created_at")
 
-                # Parse JSON response
-                data = response.json()
-                print("Response:", json.dumps(data, indent=2))  # Pretty print response
-                print()
 
-                if response.status_code == 200:
-                    print('Success - 200 - LLM endpoint')
+        if model_instance.name == 'Gemini':
+            conversation_payload = [
+                {"text": msg.message} for msg in conversation_history
+            ]
+            # Construct the request payload
+            payload = {
+                "contents": [{"parts": conversation_payload}]
+            }
 
-                    try:
-                        response_json = response.json()
-                        # Extract message text from the response structure
+        elif model_instance.name == 'Llama3.2 3b':
+            # Convert conversation history to LLM API format
+            conversation_payload = [
+                {"role": msg.role, "content": msg.message}
+                for msg in conversation_history
+                if msg.message.strip()  # Ensure message is not empty
+            ]
+
+            # Add system prompt (optional but recommended)
+            system_message = {"role": "system", "content": "You are a helpful assistant called Athenus."}
+
+            # Construct request payload (ensuring all messages have 'content')
+            payload = {
+                "model": "llama",
+                "messages": [system_message] + conversation_payload,
+            }
+
+        else:
+            # Convert conversation history to LLM API format
+            print(f'MODEL NAME: {model_instance.name}')
+            conversation_payload = 'I am athenus assistant'
+
+
+            # conversation_payload = "\n".join(
+            #     msg.message.strip() for msg in conversation_history if msg.message.strip()
+            # )
+
+            # Construct request payload (ensuring all messages have 'content')
+            payload = {
+                "role": message.role,
+                "text": f"Context: {conversation_payload}. Message: {message.user}",
+                "userId": f"{message.user.id}"
+            }
+
+        try:
+            response = requests.post(
+                base_url,
+                headers=HEADERS,
+                #params=PARAMS,
+                json=payload,
+                timeout=100
+            )
+
+            # Parse JSON response
+            data = response.json()
+            print("Response: ", json.dumps(data, indent=2))  # Pretty print response
+            print()
+
+            if response.status_code == 200:
+                print('Success - 200 - LLM endpoint')
+
+                try:
+                    response_json = response.json()
+
+                    if model_instance.name == 'Llama3.2 3b':
+                        # Extract model's response message
                         response_data = (
-                            response_json.get("candidates", [{}])[0]
-                            .get("content", {})
-                            .get("parts", [{}])[0]
-                            .get("text", "No response")
+                            response_json.get("choices", [{}])[0]
+                            .get("message", {})
+                            .get("content", "No response")
+                        )
+                    else:
+                        response_data = (
+                            response_json.get("answer")
                         )
 
-                        # Create a new message with role 'model'
-                        Message.objects.create(
-                            role="model",
-                            message=response_data,
-                            model=model_instance,
-                            user=message.user  # Link to the same user
-                        )
-                        print('Model role message created in DB.')
+                    # Store LLM response in the database
+                    # Store model's response as a new Message object
+                    model_message = Message.objects.create(
+                        role="model",
+                        message=response_data,
+                        model=model_instance,
+                        user=message.user
+                    )
+                    print('Model role message created in DB.')
 
-                    except (IndexError, KeyError, TypeError) as e:
-                        print(f"Error parsing LLM response: {e}, Response: {response_json}")
-                else:
-                    print(f"API error: {response.status_code}, {response.text}")
+                    # Prepare structured response
+                    response_payload = {
+                        "id": model_message.id,
+                        "role": "model",
+                        "content": response_data,
+                        "created_at": model_message.created_at.isoformat()
+                    }
 
-            except requests.RequestException as e:
-                print(f"Request failed: {e}")  # Log the error
+                    print('Model role message created in DB.')
+
+                except (IndexError, KeyError, TypeError) as e:
+                    print(f"Error parsing LLM response: {e}, Response: {response_json}")
+
+            else:
+                print(f"API error: {response.status_code}, {response.text}")
+
+        except Exception as e:
+            print(f"Request failed: {e}")
+
+        return message, response_payload
+
+    def create(self, request, *args, **kwargs):
+        """
+        Override create() to return the user message and model response in the payload.
+        """
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        # Call perform_create() to handle message creation and LLM response
+        user_message, model_response = self.perform_create(serializer)
+
+        # Build response payload
+        response_payload = {
+            "user_message": {
+                "id": user_message.id,
+                "role": user_message.role,
+                "content": user_message.message,
+                "created_at": user_message.created_at.isoformat()
+            },
+            "model_response": model_response
+        }
+
+        return Response(response_payload, status=status.HTTP_201_CREATED)
 
     def get_queryset(self):
         """Filter queryset to authenticated user"""
