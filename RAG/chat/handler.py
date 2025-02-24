@@ -129,10 +129,6 @@ class ChatHandler:
             self.logger.info("\nRespuesta: %s", response)
             session_messages.append({"role": "assistant", "content": response})
 
-            feedback = input("\n¿Deseas calificar la respuesta? (1-5, o presiona Enter para saltar): ")
-            if feedback.isdigit() and 1 <= int(feedback) <= 5:
-                self.save_feedback(query, response, int(feedback))
-
         except Exception as e:
             logging.error("Error procesando la consulta: %s", str(e))
             fallback = self.fallback_keyword_search(query)
