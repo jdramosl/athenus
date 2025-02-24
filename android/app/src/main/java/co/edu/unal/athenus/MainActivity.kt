@@ -71,7 +71,7 @@ class MainActivity : AppCompatActivity() {
 
     val chat = model.startChat(
         history = listOf(
-            content(role = "model") { text("You are called Athenus Assistant. You are good and helpful assisting companies and employees.") }
+            content(role = "model") { text("Te llamas Asistente reto 11 powered by Gemini. Eres un gran asistente que puede ayudar en diferentes tareas.") }
         )
     )
 

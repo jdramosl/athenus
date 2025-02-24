@@ -28,7 +28,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:hint="Type your message..."
+            android:hint="Escribe tu consulta..."
             android:padding="10dp"
             android:background="@drawable/edit_text_background"
             android:textColor="#000000"
@@ -46,7 +46,7 @@
             android:id="@+id/buttonSend"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Send"
+            android:text="Enviar"
             android:backgroundTint="@color/colorPrimary"
             android:textColor="#FFFFFF"
             android:layout_marginStart="8dp"/>

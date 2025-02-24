@@ -98,10 +98,10 @@ dependencies {
         }
     }
 
-    implementation("org.tensorflow:tensorflow-lite:2.13.0") // Core TensorFlow Lite library
-    implementation("org.tensorflow:tensorflow-lite-gpu:2.13.0") // Only if you need GPU acceleration
-    implementation("org.tensorflow:tensorflow-lite-support:0.4.4") // Optional support library
+    implementation(libs.tensorflow.lite.v2130) // Core TensorFlow Lite library
+    implementation(libs.tensorflow.lite.gpu) // Only if you need GPU acceleration
+    implementation(libs.tensorflow.lite.support) // Optional support library
 
-    implementation("com.google.ai.client.generativeai:generativeai:0.7.0")
+    implementation(libs.generativeai)
 
 }
