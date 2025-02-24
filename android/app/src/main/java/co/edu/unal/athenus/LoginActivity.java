@@ -92,7 +92,9 @@ public class LoginActivity extends AppCompatActivity {
                                 // Guardar el token
                                 SharedPreferences prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE);
                                 boolean success = prefs.edit().putString("auth_token", token).commit(); // Usa commit() para verificar si se guardó
-                                Log.d("TOKEN_DEBUG", "Token guardado correctamente: " + success);
+                                boolean successloggedIn = prefs.edit().putBoolean("isLoggedIn", true).commit();
+
+                                Log.d("TOKEN_DEBUG", "Token guardado correctamente: " + success+successloggedIn);
 
                                 // Redirigir al usuario
                                 runOnUiThread(() -> {
