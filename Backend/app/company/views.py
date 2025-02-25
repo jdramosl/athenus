@@ -255,9 +255,10 @@ class MessageViewSet(
             # Construct request payload (ensuring all messages have 'content')
             payload = {
                 "role": message.role,
-                "text": f"Context: {conversation_payload}. Message: {message.user}",
+                "text": f"{message.message}",
                 "userId": f"{message.user.id}"
             }
+            print(payload)
 
         try:
             response = requests.post(
