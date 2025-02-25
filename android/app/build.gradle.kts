@@ -32,7 +32,7 @@ android {
     }
     externalNativeBuild {
         cmake {
-            path ("src/main/cpp/CMakeLists.txt")
+            path("src/main/cpp/CMakeLists.txt")
             version = "3.22.1"
         }
     }
@@ -48,10 +48,14 @@ android {
         compose = true
         viewBinding = true
     }
+
+    packaging {
+        jniLibs.pickFirsts.add("lib/arm64-v8a/libtensorflowlite.so")
+    }
 }
 
 dependencies {
-
+    implementation(libs.stripe.android)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
@@ -67,18 +71,22 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.androidx.room.compiler)
     testImplementation(libs.junit)
-    implementation (libs.androidx.appcompat)
-    implementation (libs.material)
-    implementation (libs.androidx.constraintlayout)
-// Main TensorFlow Lite library
+    implementation(libs.androidx.appcompat)
+    implementation(libs.material)
+    implementation(libs.androidx.constraintlayout)
+    // Main TensorFlow Lite libraries declaradas en HEAD:
     implementation(libs.tensorflow.lite.v2130)
     implementation(libs.tensorflow.lite.support)
     implementation(libs.tensorflow.lite.metadata)
     implementation(libs.tensorflow.lite.gpu)
     implementation(libs.tensorflow.lite.gpu.delegate.plugin)
+    // Además, se agregan las dependencias de TensorFlow Lite provenientes del incoming:
+    implementation("org.tensorflow:tensorflow-lite:2.13.0") // Core TensorFlow Lite library
+    implementation("org.tensorflow:tensorflow-lite-gpu:2.13.0") // GPU acceleration (solo si se requiere)
+    implementation("org.tensorflow:tensorflow-lite-support:0.4.4") // Biblioteca opcional de soporte
+
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar", "*.so"))))
     androidTestImplementation(libs.androidx.junit)
-    implementation("com.stripe:stripe-android:21.5.1")
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
@@ -94,5 +102,4 @@ dependencies {
             exclude(group = "com.google.ai.edge.litert", module = "litert-api")
         }
     }
-
 }
