@@ -50,3 +50,5 @@ class UserAdmin(BaseUserAdmin):
 admin.site.register(models.User, UserAdmin)
 admin.site.register(models.Company)
 admin.site.register(models.Employee)
+admin.site.register(models.ModelLLM)
+admin.site.register(models.Message)
